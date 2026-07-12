@@ -31,8 +31,7 @@ export class BoardRenderer {
       element.style.setProperty("--piece-y", piece.y);
       element.style.setProperty("--piece-w", piece.w);
       element.style.setProperty("--piece-h", piece.h);
-      element.style.removeProperty("--drag-x");
-      element.style.removeProperty("--drag-y");
+      element.style.removeProperty("transform");
       element.classList.toggle("is-selected", piece.id === selectedId);
       element.classList.toggle("is-hint", piece.id === hintPieceId);
       element.classList.toggle("is-escaping", escaping && piece.id === "K");
@@ -48,16 +47,14 @@ export class BoardRenderer {
   setPreview(pieceId, dx, dy) {
     const element = this.elements.get(pieceId);
     if (!element) return;
-    element.style.setProperty("--drag-x", `${dx}px`);
-    element.style.setProperty("--drag-y", `${dy}px`);
     element.classList.add("is-dragging");
+    element.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
   }
 
   clearPreview(pieceId) {
     const element = this.elements.get(pieceId);
     if (!element) return;
-    element.style.removeProperty("--drag-x");
-    element.style.removeProperty("--drag-y");
+    element.style.removeProperty("transform");
     element.classList.remove("is-dragging");
   }
 
