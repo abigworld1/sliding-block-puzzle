@@ -4,8 +4,8 @@ import { commitHistory, createHistory, redoHistory, undoHistory } from "./histor
 import { applyMove, createEscapeMove, createMove, getMaxDistance, getPiece, isEscapeAvailable, validateMove } from "./model.js";
 import { loadGame, saveGame } from "./storage.js";
 import { ActiveTimer } from "./timer.js";
-import { BoardRenderer } from "./renderer.js";
-import { InputController } from "./input.js";
+import { BoardRenderer } from "./renderer.js?v=2";
+import { InputController } from "./input.js?v=2";
 import { SolverClient } from "./solver-client.js";
 import { resolveMoveDescriptor } from "./solver-core.js";
 
