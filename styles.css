@@ -324,6 +324,7 @@ h3 { margin: 1.5rem 0 .5rem; }
 .action-button.danger { color: #2b0a10; border-color: var(--danger); background: var(--danger); }
 .solver-status { min-height: 2.8em; margin: .8rem 0; color: var(--muted); font-size: .8rem; line-height: 1.45; }
 .solution-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+#autoplay-button { grid-column: 1 / -1; }
 .text-button { grid-column: 1 / -1; min-height: 34px; color: var(--muted); border: 0; background: transparent; text-decoration: underline; text-underline-offset: .2em; }
 .solver-spinner { width: 20px; height: 20px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -352,6 +353,11 @@ footer a { color: var(--accent); white-space: nowrap; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.5rem; }
 .clear-modal { text-align: center; }
 .clear-symbol { margin: 0 !important; color: var(--accent) !important; font-size: 3.5rem; line-height: 1 !important; }
+.clear-assistance { margin: .7rem auto 0; padding: .55rem .8rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--surface-2); font-size: .82rem; }
+.clear-modal[data-mode="hint"] .clear-symbol,
+.clear-modal[data-mode="hint"] .mini-label { color: var(--warm) !important; }
+.clear-modal[data-mode="autoplay"] .clear-symbol,
+.clear-modal[data-mode="autoplay"] .mini-label { color: #a99aff !important; }
 .clear-modal .dialog-actions { justify-content: center; }
 .noscript { margin: 1rem; padding: 1rem; color: #2b0a10; background: var(--danger); }
 

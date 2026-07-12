@@ -5,11 +5,23 @@ import { createHistory } from "../js/history.js";
 import { decodeSave, encodeSave, loadGame, saveGame } from "../js/storage.js";
 
 test("保存形式を安全に往復できる", () => {
-  const data = { history: createHistory(createInitialState()), elapsedMs: 1234, best: { moves: 42, timeMs: 5678 } };
+  const data = {
+    history: createHistory(createInitialState()),
+    elapsedMs: 1234,
+    best: { moves: 42, timeMs: 5678 },
+    assistance: { hintCount: 2, autoplayMoves: 7 }
+  };
   const decoded = decodeSave(encodeSave(data, CLASSIC_LEVEL), CLASSIC_LEVEL);
   assert.equal(decoded.elapsedMs, 1234);
   assert.deepEqual(decoded.best, data.best);
+  assert.deepEqual(decoded.assistance, data.assistance);
   assert.equal(decoded.history.present.pieces.length, 10);
+});
+
+test("旧保存データではアシスト利用数を0として復元する", () => {
+  const data = { history: createHistory(createInitialState()), elapsedMs: 0, best: {} };
+  const decoded = decodeSave(encodeSave(data, CLASSIC_LEVEL), CLASSIC_LEVEL);
+  assert.deepEqual(decoded.assistance, { hintCount: 0, autoplayMoves: 0 });
 });
 
 test("壊れたJSON、古いスキーマ、不正盤面を拒否する", () => {

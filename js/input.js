@@ -83,21 +83,27 @@ export class InputController {
     if (!this.drag || event.pointerId !== this.drag.pointerId) return;
     const { pieceId, axis, preview, cellSize, animationFrame } = this.drag;
     if (animationFrame !== null) cancelAnimationFrame(animationFrame);
-    this.renderer.clearPreview(pieceId);
     this.drag = null;
     if (!axis) {
+      this.renderer.clearPreview(pieceId);
       this.onSelect(pieceId);
       return;
     }
     const cells = Math.round(preview / cellSize);
-    if (cells === 0) return;
-    const direction = axis === "x" ? (cells > 0 ? "right" : "left") : (cells > 0 ? "down" : "up");
-    const state = this.getState();
-    if (pieceId === "K" && direction === "down" && isEscapeAvailable(state, this.level) && getMaxDistance(state, pieceId, "down", this.level) === 0) {
-      this.onEscape();
+    if (cells === 0) {
+      this.renderer.clearPreview(pieceId);
       return;
     }
-    this.onMove(pieceId, direction, Math.abs(cells));
+    const direction = axis === "x" ? (cells > 0 ? "right" : "left") : (cells > 0 ? "down" : "up");
+    const state = this.getState();
+    let moved;
+    if (pieceId === "K" && direction === "down" && isEscapeAvailable(state, this.level) && getMaxDistance(state, pieceId, "down", this.level) === 0) {
+      moved = this.onEscape();
+    } else {
+      moved = this.onMove(pieceId, direction, Math.abs(cells));
+    }
+    if (moved === false) this.renderer.clearPreview(pieceId);
+    else this.renderer.finishPreview(pieceId);
   }
 
   pointerCancel(event) {

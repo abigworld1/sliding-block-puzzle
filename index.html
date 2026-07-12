@@ -10,7 +10,7 @@
   <meta property="og:type" content="website">
   <title>4×5 脱出パズル</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=2">
+  <link rel="stylesheet" href="./styles.css?v=3">
 </head>
 <body>
   <a class="skip-link" href="#game-board">盤面へ移動</a>
@@ -98,7 +98,6 @@
         </div>
         <p id="solver-status" class="solver-status">現在の局面から解答を探索できます。</p>
         <div class="solution-actions">
-          <button id="solution-step-button" class="action-button" type="button" disabled>1手進める</button>
           <button id="autoplay-button" class="action-button" type="button">自動再生</button>
           <button id="cancel-solution-button" class="text-button" type="button" disabled>中止</button>
         </div>
@@ -144,10 +143,11 @@
 
   <dialog id="clear-dialog" class="modal clear-modal">
     <form method="dialog">
-      <p class="clear-symbol" aria-hidden="true">◇</p>
-      <p class="mini-label">ESCAPED</p>
-      <h2>脱出成功！</h2>
+      <p id="clear-symbol" class="clear-symbol" aria-hidden="true">◇</p>
+      <p id="clear-label" class="mini-label">SELF SOLVED</p>
+      <h2 id="clear-title">自力で脱出成功！</h2>
       <p id="clear-summary">0手、00:00でクリアしました。</p>
+      <p id="clear-assistance" class="clear-assistance">ヒントなし・自動再生なし</p>
       <div class="dialog-actions">
         <button class="action-button" value="close">盤面を見る</button>
         <button id="play-again-button" class="action-button accent" value="again">もう一度</button>
@@ -156,6 +156,6 @@
   </dialog>
 
   <noscript><p class="noscript">このゲームを遊ぶにはJavaScriptを有効にしてください。</p></noscript>
-  <script type="module" src="./js/app.js?v=2"></script>
+  <script type="module" src="./js/app.js?v=3"></script>
 </body>
 </html>

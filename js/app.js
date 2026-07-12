@@ -4,10 +4,11 @@ import { commitHistory, createHistory, redoHistory, undoHistory } from "./histor
 import { applyMove, createEscapeMove, createMove, getMaxDistance, getPiece, isEscapeAvailable, validateMove } from "./model.js";
 import { loadGame, saveGame } from "./storage.js";
 import { ActiveTimer } from "./timer.js";
-import { BoardRenderer } from "./renderer.js?v=2";
-import { InputController } from "./input.js?v=2";
+import { BoardRenderer } from "./renderer.js?v=3";
+import { InputController } from "./input.js?v=3";
 import { SolverClient } from "./solver-client.js";
 import { resolveMoveDescriptor } from "./solver-core.js";
+import { createAssistance, describeAssistance, getCompletionMode } from "./assistance.js";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -26,7 +27,6 @@ const elements = {
   redo: $("#redo-button"),
   restart: $("#restart-button"),
   hint: $("#hint-button"),
-  solutionStep: $("#solution-step-button"),
   autoplay: $("#autoplay-button"),
   cancelSolution: $("#cancel-solution-button"),
   solverStatus: $("#solver-status"),
@@ -37,13 +37,18 @@ const elements = {
   restartDialog: $("#restart-dialog"),
   confirmRestart: $("#confirm-restart-button"),
   clearDialog: $("#clear-dialog"),
+  clearSymbol: $("#clear-symbol"),
+  clearLabel: $("#clear-label"),
+  clearTitle: $("#clear-title"),
   clearSummary: $("#clear-summary"),
+  clearAssistance: $("#clear-assistance"),
   playAgain: $("#play-again-button")
 };
 
 const restored = loadGame(CLASSIC_LEVEL);
 let history = restored?.history ?? createHistory(createInitialState());
 let best = restored?.best ?? { moves: null, timeMs: null };
+let assistance = restored?.assistance ?? createAssistance();
 const timer = new ActiveTimer(restored?.elapsedMs ?? 0);
 let selectedId = null;
 let solution = null;
@@ -110,14 +115,13 @@ function render() {
     const canMove = selected && getMaxDistance(currentState(), selected.id, direction, CLASSIC_LEVEL) > 0;
     button.disabled = currentState().escaped || (!canMove && !canEscape);
   }
-  elements.solutionStep.disabled = solving || !solution?.length || currentState().escaped;
   elements.cancelSolution.disabled = !solving && !solution?.length && autoplayTimer === null;
   elements.hint.disabled = solving || currentState().escaped;
   elements.solverSpinner.hidden = !solving;
 }
 
 function persist() {
-  const saved = saveGame({ history, elapsedMs: timer.elapsed(), best }, CLASSIC_LEVEL);
+  const saved = saveGame({ history, elapsedMs: timer.elapsed(), best, assistance }, CLASSIC_LEVEL);
   elements.saveIndicator.textContent = saved ? "自動保存" : "保存できません";
 }
 
@@ -140,6 +144,7 @@ function clearSolution({ cancelWorker = true, status = "現在の局面から解
 }
 
 function updateBest() {
+  if (getCompletionMode(assistance) !== "self") return;
   const moves = history.past.length;
   const timeMs = timer.elapsed();
   if (best.moves === null || moves < best.moves) best.moves = moves;
@@ -149,9 +154,21 @@ function updateBest() {
 function showClearDialog() {
   clearDialogTimer = null;
   if (!currentState().escaped) return;
+  const mode = getCompletionMode(assistance);
+  const presentations = {
+    self: { symbol: "◇", label: "SELF SOLVED", title: "自力で脱出成功！" },
+    hint: { symbol: "✦", label: "WITH HINTS", title: "ヒントを活用して脱出！" },
+    autoplay: { symbol: "▶", label: "AUTOPLAY REVIEW", title: "自動再生で解答確認！" }
+  };
+  const presentation = presentations[mode];
+  elements.clearDialog.dataset.mode = mode;
+  elements.clearSymbol.textContent = presentation.symbol;
+  elements.clearLabel.textContent = presentation.label;
+  elements.clearTitle.textContent = presentation.title;
   elements.clearSummary.textContent = `${history.past.length}手、${formatTime(timer.elapsed())}でクリアしました。`;
+  elements.clearAssistance.textContent = describeAssistance(assistance);
   if (!elements.clearDialog.open) elements.clearDialog.showModal();
-  announce(`脱出成功。${history.past.length}手、${formatTime(timer.elapsed())}でクリアしました。`);
+  announce(`${presentation.title} ${history.past.length}手、${formatTime(timer.elapsed())}でクリアしました。${elements.clearAssistance.textContent}。`);
 }
 
 function commitMove(move, { fromSolution = false } = {}) {
@@ -250,6 +267,7 @@ function resetGame() {
   clearSolution();
   history = createHistory(createInitialState());
   timer.reset();
+  assistance = createAssistance();
   selectedId = null;
   escaping = false;
   persist();
@@ -257,12 +275,14 @@ function resetGame() {
   announce("初期配置に戻しました。");
 }
 
-async function requestSolution() {
+async function requestSolution(purpose = "hint") {
   if (currentState().escaped) return false;
   stopAutoplay();
   solution = null;
   solving = true;
-  elements.solverStatus.textContent = "現在の局面から解答を探索中…";
+  elements.solverStatus.textContent = purpose === "hint"
+    ? "現在の局面から次の一手を探索中…"
+    : "自動再生用の解答を探索中…";
   render();
   try {
     const result = await solver.solve(currentState());
@@ -274,10 +294,18 @@ async function requestSolution() {
       return false;
     }
     solution = result.moves;
+    if (purpose === "hint" && solution.length) {
+      assistance.hintCount += 1;
+      persist();
+    }
     elements.solverStatus.textContent = solution.length
-      ? `次の一手: ${describeDescriptor(solution[0])}（残り${solution.length}手）`
+      ? purpose === "hint"
+        ? `ヒント ${assistance.hintCount}回目: ${describeDescriptor(solution[0])}（解答まで残り${solution.length}手）`
+        : `解答を発見しました（残り${solution.length}手）。自動再生を開始します。`
       : "すでにクリアしています。";
-    announce(solution.length ? `ヒント。${describeDescriptor(solution[0])}。` : "すでにクリアしています。");
+    announce(solution.length
+      ? purpose === "hint" ? `ヒント。${describeDescriptor(solution[0])}。` : "自動再生用の解答を見つけました。"
+      : "すでにクリアしています。");
     render();
     return true;
   } catch (error) {
@@ -291,12 +319,12 @@ async function requestSolution() {
   }
 }
 
-async function ensureSolution() {
-  return solution?.length ? true : requestSolution();
+async function ensureSolution(purpose) {
+  return solution?.length ? true : requestSolution(purpose);
 }
 
-async function stepSolution() {
-  if (!(await ensureSolution()) || !solution?.length) return false;
+async function playNextSolutionMove() {
+  if (!solution?.length) return false;
   const descriptor = solution[0];
   const move = resolveMoveDescriptor(currentState(), descriptor);
   if (!move) {
@@ -304,8 +332,12 @@ async function stepSolution() {
     render();
     return false;
   }
+  assistance.autoplayMoves += 1;
   const moved = commitMove(move, { fromSolution: true });
-  if (!moved) return false;
+  if (!moved) {
+    assistance.autoplayMoves -= 1;
+    return false;
+  }
   solution.shift();
   if (!currentState().escaped) {
     elements.solverStatus.textContent = solution.length
@@ -323,12 +355,12 @@ async function toggleAutoplay() {
     render();
     return;
   }
-  if (!(await ensureSolution()) || !solution?.length) return;
+  if (!(await ensureSolution("autoplay")) || !solution?.length) return;
   elements.autoplay.textContent = "一時停止";
   const delay = matchMedia("(prefers-reduced-motion: reduce)").matches ? 90 : 430;
   const playNext = async () => {
     autoplayTimer = null;
-    const moved = await stepSolution();
+    const moved = await playNextSolutionMove();
     if (!moved || currentState().escaped || !solution?.length) {
       stopAutoplay();
       render();
@@ -369,8 +401,7 @@ elements.undo.addEventListener("click", undo);
 elements.redo.addEventListener("click", redo);
 elements.restart.addEventListener("click", () => elements.restartDialog.showModal());
 elements.confirmRestart.addEventListener("click", (event) => { event.preventDefault(); resetGame(); });
-elements.hint.addEventListener("click", requestSolution);
-elements.solutionStep.addEventListener("click", stepSolution);
+elements.hint.addEventListener("click", () => requestSolution("hint"));
 elements.autoplay.addEventListener("click", toggleAutoplay);
 elements.cancelSolution.addEventListener("click", () => {
   clearSolution({ status: "解答ナビを中止しました。" });
@@ -398,7 +429,7 @@ document.addEventListener("keydown", (event) => {
     elements.restartDialog.showModal();
   } else if (!modifier && key === "h") {
     event.preventDefault();
-    requestSolution();
+    requestSolution("hint");
   } else if (event.key === "Escape" && selectedId) {
     selectedId = null;
     announce("選択を解除しました。");

@@ -5,7 +5,7 @@ function validSnapshot(state, level) {
   return validateState(state, level).valid;
 }
 
-export function encodeSave({ history, elapsedMs, best }, level) {
+export function encodeSave({ history, elapsedMs, best, assistance }, level) {
   const snapshots = [...history.past, history.present, ...history.future];
   if (!snapshots.every((state) => validSnapshot(state, level))) throw new Error("保存対象の盤面が不正です");
   return JSON.stringify({
@@ -16,6 +16,10 @@ export function encodeSave({ history, elapsedMs, best }, level) {
     best: {
       moves: Number.isInteger(best?.moves) && best.moves >= 0 ? best.moves : null,
       timeMs: Number.isFinite(best?.timeMs) && best.timeMs >= 0 ? Math.floor(best.timeMs) : null
+    },
+    assistance: {
+      hintCount: Number.isInteger(assistance?.hintCount) && assistance.hintCount >= 0 ? assistance.hintCount : 0,
+      autoplayMoves: Number.isInteger(assistance?.autoplayMoves) && assistance.autoplayMoves >= 0 ? assistance.autoplayMoves : 0
     }
   });
 }
@@ -38,6 +42,10 @@ export function decodeSave(serialized, level) {
       best: {
         moves: Number.isInteger(data.best?.moves) && data.best.moves >= 0 ? data.best.moves : null,
         timeMs: Number.isFinite(data.best?.timeMs) && data.best.timeMs >= 0 ? Math.floor(data.best.timeMs) : null
+      },
+      assistance: {
+        hintCount: Number.isInteger(data.assistance?.hintCount) && data.assistance.hintCount >= 0 ? data.assistance.hintCount : 0,
+        autoplayMoves: Number.isInteger(data.assistance?.autoplayMoves) && data.assistance.autoplayMoves >= 0 ? data.assistance.autoplayMoves : 0
       }
     };
   } catch {

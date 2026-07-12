@@ -58,6 +58,16 @@ export class BoardRenderer {
     element.classList.remove("is-dragging");
   }
 
+  finishPreview(pieceId) {
+    const element = this.elements.get(pieceId);
+    if (!element) return;
+    element.style.removeProperty("transform");
+    // 新しいセル位置を transition:none の状態で確定してからドラッグ状態を外す。
+    // ここで一度だけレイアウトを確定し、旧位置へ戻る補間が混ざるのを防ぐ。
+    void element.offsetWidth;
+    element.classList.remove("is-dragging");
+  }
+
   focusPiece(pieceId) {
     this.elements.get(pieceId)?.focus();
   }
