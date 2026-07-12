@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11182b">
+  <meta name="description" content="目標駒を出口へ導く、独立制作の4×5スライドパズル。タッチ、マウス、キーボードで遊べます。">
+  <meta property="og:title" content="4×5 脱出パズル">
+  <meta property="og:description" content="10個の駒を動かして、目標駒を下の出口へ導こう。">
+  <meta property="og:type" content="website">
+  <title>4×5 脱出パズル</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#game-board">盤面へ移動</a>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">SLIDE · THINK · ESCAPE</p>
+      <h1>4×5 脱出パズル</h1>
+      <p class="lead">10個の駒をスライドして、目標駒を下の出口へ。</p>
+    </div>
+    <button id="help-button" class="icon-button" type="button" aria-label="遊び方を開く">遊び方</button>
+  </header>
+
+  <main class="game-shell">
+    <section class="board-column" aria-labelledby="board-heading">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">CLASSIC / 4 × 5</p>
+          <h2 id="board-heading">脱出ルート</h2>
+        </div>
+        <span id="game-state-badge" class="state-badge">挑戦中</span>
+      </div>
+
+      <div class="board-wrap">
+        <div id="game-board" class="game-board" role="group" aria-label="4列5行のパズル盤。下辺中央に出口があります">
+          <div class="board-grid" aria-hidden="true"></div>
+          <div class="exit-marker" aria-hidden="true"><span>EXIT</span></div>
+          <div id="pieces-layer" class="pieces-layer"></div>
+        </div>
+      </div>
+      <p id="selection-help" class="selection-help">駒をドラッグするか、選んで矢印キーで動かしてください。</p>
+    </section>
+
+    <aside class="control-column" aria-label="ゲーム情報と操作">
+      <section class="status-card" aria-labelledby="status-heading">
+        <div class="card-heading">
+          <h2 id="status-heading">プレイ記録</h2>
+          <span id="save-indicator" class="save-indicator">自動保存</span>
+        </div>
+        <dl class="stats-grid">
+          <div><dt>手数</dt><dd id="move-count">0</dd></div>
+          <div><dt>時間</dt><dd id="elapsed-time">00:00</dd></div>
+          <div><dt>ベスト手数</dt><dd id="best-moves">—</dd></div>
+          <div><dt>ベスト時間</dt><dd id="best-time">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="control-card" aria-labelledby="move-heading">
+        <div class="card-heading">
+          <div>
+            <p class="mini-label">SELECTED</p>
+            <h2 id="move-heading">駒を選択</h2>
+          </div>
+          <span id="selected-piece-label" class="selected-chip">未選択</span>
+        </div>
+        <div class="direction-pad" aria-label="選択した駒を動かす">
+          <button class="direction-button up" type="button" data-direction="up" aria-label="上へ動かす">↑</button>
+          <button class="direction-button left" type="button" data-direction="left" aria-label="左へ動かす">←</button>
+          <button class="direction-button down" type="button" data-direction="down" aria-label="下へ動かす">↓</button>
+          <button class="direction-button right" type="button" data-direction="right" aria-label="右へ動かす">→</button>
+          <div class="pad-center" aria-hidden="true"></div>
+        </div>
+        <label class="toggle-row">
+          <input id="move-farthest" type="checkbox">
+          <span><strong>端まで動かす</strong><small>1回の操作で最遠位置へ</small></span>
+        </label>
+      </section>
+
+      <section class="control-card" aria-labelledby="actions-heading">
+        <h2 id="actions-heading">ゲーム操作</h2>
+        <div class="button-grid">
+          <button id="undo-button" class="action-button" type="button">↶ Undo</button>
+          <button id="redo-button" class="action-button" type="button">↷ Redo</button>
+          <button id="restart-button" class="action-button" type="button">最初から</button>
+          <button id="hint-button" class="action-button accent" type="button">ヒント</button>
+        </div>
+      </section>
+
+      <section class="control-card solution-card" aria-labelledby="solution-heading">
+        <div class="card-heading">
+          <div>
+            <p class="mini-label">LIVE SOLVER</p>
+            <h2 id="solution-heading">解答ナビ</h2>
+          </div>
+          <span id="solver-spinner" class="solver-spinner" hidden aria-hidden="true"></span>
+        </div>
+        <p id="solver-status" class="solver-status">現在の局面から解答を探索できます。</p>
+        <div class="solution-actions">
+          <button id="solution-step-button" class="action-button" type="button" disabled>1手進める</button>
+          <button id="autoplay-button" class="action-button" type="button">自動再生</button>
+          <button id="cancel-solution-button" class="text-button" type="button" disabled>中止</button>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer>
+    <p>本作は独立制作の非公式なスライドパズルです。特定の製品・企業との提携・承認関係はありません。</p>
+    <a href="../">サイトトップへ戻る</a>
+  </footer>
+
+  <p id="live-region" class="visually-hidden" aria-live="polite" aria-atomic="true"></p>
+
+  <dialog id="help-dialog" class="modal">
+    <form method="dialog">
+      <div class="modal-heading">
+        <div><p class="mini-label">HOW TO PLAY</p><h2>遊び方</h2></div>
+        <button class="close-button" value="close" aria-label="遊び方を閉じる">×</button>
+      </div>
+      <ol>
+        <li>駒を上下左右へスライドします。回転や飛び越しはできません。</li>
+        <li>大きな目標駒を、盤面下中央の出口直前まで運びます。</li>
+        <li>最後に目標駒をもう一度下へ動かすと脱出です。</li>
+      </ol>
+      <h3>キーボード</h3>
+      <p><kbd>Tab</kbd> で駒を選び、<kbd>Enter</kbd> または <kbd>Space</kbd> で選択。矢印キーで1セル、<kbd>Shift</kbd>＋矢印キーで端まで動かせます。</p>
+      <p><kbd>Ctrl/Cmd</kbd>＋<kbd>Z</kbd> はUndo、<kbd>H</kbd> はヒント、<kbd>R</kbd> はリスタートです。</p>
+    </form>
+  </dialog>
+
+  <dialog id="restart-dialog" class="modal compact-modal">
+    <form method="dialog">
+      <p class="mini-label">RESTART</p>
+      <h2>最初からやり直しますか？</h2>
+      <p>現在の進行と経過時間はリセットされます。ベスト記録は残ります。</p>
+      <div class="dialog-actions">
+        <button class="action-button" value="cancel">キャンセル</button>
+        <button id="confirm-restart-button" class="action-button danger" value="confirm">やり直す</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="clear-dialog" class="modal clear-modal">
+    <form method="dialog">
+      <p class="clear-symbol" aria-hidden="true">◇</p>
+      <p class="mini-label">ESCAPED</p>
+      <h2>脱出成功！</h2>
+      <p id="clear-summary">0手、00:00でクリアしました。</p>
+      <div class="dialog-actions">
+        <button class="action-button" value="close">盤面を見る</button>
+        <button id="play-again-button" class="action-button accent" value="again">もう一度</button>
+      </div>
+    </form>
+  </dialog>
+
+  <noscript><p class="noscript">このゲームを遊ぶにはJavaScriptを有効にしてください。</p></noscript>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

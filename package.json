@@ -1,0 +1,8 @@
+{
+  "name": "independent-4x5-escape-puzzle",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
